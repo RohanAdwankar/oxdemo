@@ -1,0 +1,26 @@
+[package]
+name = "oxdemo"
+version = "0.1.0"
+edition = "2021"
+description = "Scripted product demos with a real cursor, captions and zoom, recorded straight from your running app"
+license = "MIT"
+repository = "https://github.com/RohanAdwankar/oxdemo"
+readme = "README.md"
+keywords = ["demo", "screen-recording", "gif", "chromium", "video"]
+categories = ["command-line-utilities", "multimedia::video"]
+
+[dependencies]
+anyhow = "1"
+base64 = "0.22"
+color_quant = "1.1"
+gif = "0.13"
+image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }
+serde_json = "1"
+tungstenite = { version = "0.26", default-features = false, features = ["handshake"] }
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+
+[profile.dev]
+opt-level = 2

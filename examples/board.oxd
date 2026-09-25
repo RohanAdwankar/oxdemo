@@ -1,0 +1,25 @@
+# The example board: a filter, a new card, and a drag between columns.
+url board/index.html
+viewport 1280x800
+theme ring=#0f7a5c
+gif width=720 fps=12
+
+say "A roadmap board. Every card is a project, grouped by stage."
+hover "Sidecar for running agents"
+
+say "Filter to what matters this week."
+pick "priority filter" p1
+pause 1s
+pick "priority filter" all
+
+say "Add an idea the moment you have it."
+click "new card"
+type "card title" "Prototype fast Parquet bit-unpacking"
+key Enter
+
+say "Drag a card to move it along."
+zoom 1.6
+drag "Sidecar for running agents" to "building column"
+zoom off
+key Meta+K
+say ""

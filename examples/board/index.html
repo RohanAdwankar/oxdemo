@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Roadmap</title>
+<style>
+  :root { --ink: #211d19; --muted: #7a7169; --paper: #faf7f2; --card: #fffdfa; --line: #e6dfd5; --accent: #0f7a5c; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink); background: var(--paper); }
+  header { display: flex; align-items: center; gap: 14px; padding: 18px 28px; border-bottom: 1px solid var(--line); background: var(--card); }
+  h1 { font-size: 20px; margin: 0 12px 0 0; }
+  select, input, button { font: inherit; }
+  select { padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; background: #fff; }
+  label.ctl { color: var(--muted); font-size: 13px; display: flex; align-items: center; gap: 6px; }
+  button.primary { margin-left: auto; padding: 8px 14px; border: 0; border-radius: 6px; background: var(--accent); color: #fff; cursor: pointer; }
+  main { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; padding: 24px 28px; }
+  .col { background: #f1ece4; border-radius: 10px; padding: 12px; min-height: 560px; transition: background .15s, outline-color .15s; outline: 2px dashed transparent; }
+  .col.over { background: #e3f1ec; outline-color: var(--accent); }
+  .col h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 4px 4px 12px; display: flex; justify-content: space-between; }
+  article { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; cursor: grab; box-shadow: 0 1px 2px rgba(0,0,0,.04); animation: pop .25s ease-out; }
+  article.hidden { display: none; }
+  article .t { font-weight: 600; }
+  .tags { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .tag { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: #efe9df; color: #5d554d; }
+  .tag.p1 { background: #fde2d8; color: #9a3412; }
+  .tag.p2 { background: #fdf0c8; color: #854d0e; }
+  .tag.p3 { background: #e5e7eb; color: #4b5563; }
+  form.new { display: none; margin-bottom: 10px; }
+  form.new.open { display: block; }
+  form.new input { width: 100%; padding: 10px 12px; border: 2px solid var(--accent); border-radius: 8px; background: #fff; outline: none; }
+  @keyframes pop { from { transform: scale(.96); opacity: 0; } to { transform: none; opacity: 1; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Roadmap</h1>
+  <label class="ctl">Priority
+    <select aria-label="priority filter">
+      <option value="all">all</option><option value="p1">p1</option><option value="p2">p2</option><option value="p3">p3</option>
+    </select>
+  </label>
+  <button class="primary" aria-label="new card">+ New card</button>
+</header>
+<main>
+  <section class="col" data-stage="idea" aria-label="idea column"><h2>Idea <span></span></h2>
+    <form class="new"><input aria-label="card title" placeholder="What's the idea?"></form>
+  </section>
+  <section class="col" data-stage="building" aria-label="building column"><h2>Building <span></span></h2></section>
+  <section class="col" data-stage="eval" aria-label="eval column"><h2>Eval <span></span></h2></section>
+  <section class="col" data-stage="shipped" aria-label="shipped column"><h2>Shipped <span></span></h2></section>
+</main>
+<script>
+  const cards = [
+    ['Context router for agent fleets', 'building', 'p1', 'agents'],
+    ['Sidecar for running agents', 'idea', 'p2', 'agents'],
+    ['Profiler for agents', 'eval', 'p2', 'agents'],
+    ['Semantic font', 'shipped', 'p1', 'typography'],
+    ['Variable-weight code font', 'idea', 'p3', 'typography'],
+    ['BPE tokenizer speedup', 'eval', 'p1', 'compilers'],
+    ['Rust error-handling lint', 'idea', 'p2', 'compilers'],
+    ['Universal grep', 'building', 'p1', 'devtools'],
+  ];
+  const col = (s) => document.querySelector(`.col[data-stage="${s}"]`);
+  const count = () => document.querySelectorAll('.col').forEach((c) => {
+    c.querySelector('h2 span').textContent = c.querySelectorAll('article:not(.hidden)').length;
+  });
+  let dragging = null;
+  const add = ([title, stage, prio, project]) => {
+    const a = document.createElement('article');
+    a.draggable = true;
+    a.dataset.prio = prio;
+    a.innerHTML = `<div class="t"></div><div class="tags"><span class="tag ${prio}">${prio}</span><span class="tag">${project}</span></div>`;
+    a.querySelector('.t').textContent = title;
+    a.addEventListener('dragstart', (e) => { dragging = a; e.dataTransfer.setData('text/plain', title); });
+    col(stage).append(a);
+    return a;
+  };
+  cards.forEach(add);
+  document.querySelectorAll('.col').forEach((c) => {
+    c.addEventListener('dragover', (e) => { e.preventDefault(); c.classList.add('over'); });
+    c.addEventListener('dragleave', () => c.classList.remove('over'));
+    c.addEventListener('drop', (e) => { e.preventDefault(); c.classList.remove('over'); if (dragging) c.append(dragging); dragging = null; count(); });
+  });
+  const filter = document.querySelector('select');
+  filter.addEventListener('change', () => {
+    document.querySelectorAll('article').forEach((a) => a.classList.toggle('hidden', filter.value !== 'all' && a.dataset.prio !== filter.value));
+    count();
+  });
+  const form = document.querySelector('form.new');
+  document.querySelector('[aria-label="new card"]').addEventListener('click', () => { form.classList.add('open'); form.querySelector('input').focus(); });
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const input = form.querySelector('input');
+    if (input.value.trim()) add([input.value.trim(), 'idea', 'p2', 'new']);
+    input.value = '';
+    form.classList.remove('open');
+    count();
+  });
+  count();
+</script>
+</body>
+</html>
