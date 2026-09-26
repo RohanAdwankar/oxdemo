@@ -1,5 +1,6 @@
 mod cdp;
 mod keys;
+mod ocr;
 mod render;
 mod script;
 mod take;

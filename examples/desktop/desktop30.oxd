@@ -1,4 +1,5 @@
-# The 30 second cut. `skip` waits for real but cuts the wait out of the video.
+# A Linux desktop in Docker, driven by name, in 30 seconds.
+# `skip` waits for real but cuts the wait out of the video.
 #
 #   docker build -t oxdemo-desktop examples/desktop
 #   docker run -d --name desk --network host oxdemo-desktop
@@ -8,36 +9,30 @@ url "localhost:6080/vnc.html?autoconnect=1&resize=off&reconnect=1"
 viewport 1440x900
 style "#noVNC_control_bar_anchor, #noVNC_status { display: none !important }"
 pace 0.4
-theme size=52 offset=70
+theme size=42 offset=70
 gif width=720 fps=8
 
 say "Nobody is touching this mouse."
 say "oxdemo drives it from a script."
-click @55,12
-hover @55,221
-hover @170,221
-hover @300,221
-click @300,221
+click "Applications"
+hover "Graphics"
+hover "GNU Image Manipulation Program"
+click "GNU Image Manipulation Program"
 skip 14s
 say "Slow waits are cut out."
-double-click @683,113
+double-click "GNU Image Manipulation Program"
 
 say "Every click is one line of script."
-click @18,64
-hover @18,93
-click @40,93
-skip 1.2s
-click @875,556
-skip 600ms
-click @393,64
-hover @420,459
-hover @600,459
-hover @720,484
-hover @900,484
-hover @910,534
-click @910,534
-skip 1s
-click @1050,682
+click "File"
+hover "New..."
+click "New..."
+click "OK"
+click "Filters"
+hover "Render"
+hover "Noise"
+hover "Plasma..."
+click "Plasma..."
+click "OK"
 
 say "It zooms in on the action."
 click @77,145
@@ -46,25 +41,24 @@ draw @330,600 @450,520 @600,580 @750,480 @900,560 @1080,470
 zoom off
 
 say "Out comes an MP4 and a GIF."
-click @393,64
-hover @393,90
-hover @422,259
-hover @690,259
-hover @719,584
-click @719,584
-skip 1s
-click @1050,822
+click "Filters"
+hover "Distorts"
+hover "Waves..."
+click "Waves..."
+click "OK"
 
 say "This is the whole script."
-click @55,12
-hover @86,69
-click @86,69
+click "Applications"
+hover "Terminal Emulator"
+click "Terminal Emulator"
 skip 2s
 type "mousepad desktop30.oxd"
 key Enter
 skip 2s
-zoom 1.6
-hover @300,300
-hover @340,560
-zoom off
+hover @520,420
+zoom 1.4
+pause 1.2s
 say ""
+wheel 6000 2.5s
+pause 1.2s
+zoom off

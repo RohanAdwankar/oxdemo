@@ -75,7 +75,18 @@ A target is whatever a person would call the thing. oxdemo tries these in order:
 4. visible text that contains it
 5. a CSS selector
 
-`@x,y` is a point on the page, for canvases and remote desktops.
+6. **text on screen**, when nothing in the page matches: oxdemo reads the
+   screen and clicks the words. This is how `click "Graphics"` works on a
+   remote desktop, where the whole desktop is one canvas.
+
+`@x,y` is a point on the page, for anything with no text, like a paintbrush
+icon or a chess square. `screen:` forces the on-screen text search.
+
+Reading the screen uses [ocrs](https://github.com/robertknight/ocrs), a pure
+Rust OCR engine, so there is nothing else to install. Its two models (about
+12 MB) are downloaded to `~/.cache/oxdemo` on first use. The time spent
+reading is cut from the video. When the same words appear twice, as when a
+submenu repeats its parent's label, oxdemo picks the copy that just appeared.
 `label:`, `text:` and `css:` force one kind. `>>` narrows the search, so
 `"css:nav[aria-label=boards] >> Roadmap"` finds "Roadmap" inside the boards nav.
 
@@ -111,6 +122,7 @@ demo.oxd:3: failed 0.5s into the take:
 | `zoom 1.8`, `zoom off` | ease the view toward the cursor, or back out |
 | `draw @x,y @x,y ...` | press, travel through each point, release: a brush stroke |
 | `pause 1.5s` | hold |
+| `wheel 600 [1.5s]` | scroll with the mouse wheel where the pointer is, smoothly |
 | `skip 10s` | wait for real, but cut the wait out of the video |
 | `snap still.png` | save a screenshot, without affecting the take |
 | `eval "js"` | run JavaScript in the page |

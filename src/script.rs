@@ -137,6 +137,10 @@ pub enum Action {
     Draw(Vec<String>),
     Snap(PathBuf),
     Skip(f64),
+    Wheel {
+        dy: f64,
+        secs: f64,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -181,6 +185,9 @@ impl Script {
             }
             if let Ok(abs) = std::fs::canonicalize(dir.join(&*u)) {
                 *u = format!("file://{}", abs.display());
+            } else if u.starts_with('/') {
+                // An absolute path may be made by `before`, so it need not exist yet.
+                *u = format!("file://{u}");
             } else if u.starts_with("localhost")
                 || u.split('/').next().is_some_and(|h| h.contains(':'))
             {
@@ -500,6 +507,13 @@ pub fn parse(text: &str) -> Result<Script> {
                     }
                     push(Action::Zoom(z));
                 }
+                "wheel" => match args.len() {
+                    1 | 2 => push(Action::Wheel {
+                        dy: num("wheel", &args[0])?,
+                        secs: args.get(1).map(|a| duration(a)).transpose()?.unwrap_or(1.0),
+                    }),
+                    _ => bail!("{line}: usage: wheel 600 [1.5s]"),
+                },
                 "skip" => {
                     want(1, "skip 10s")?;
                     push(Action::Skip(duration(&args[0])?));

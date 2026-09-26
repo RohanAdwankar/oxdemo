@@ -80,6 +80,10 @@ struct Runner<'a> {
     arc: f64,
     /// When the current caption went up, and how long it wants to stay.
     caption_hold: Option<(f64, f64)>,
+    /// The screen as the last on-screen text search saw it.
+    last_shot: Option<image::RgbImage>,
+    /// The last text found on screen and where, so `hover X` then `click X` reuses the spot.
+    last_found: Option<(String, (f64, f64))>,
     take: Take,
 }
 
@@ -220,15 +224,29 @@ impl<'a> Runner<'a> {
 
     /// Find a target, scroll it into view if it is not, and return its centre.
     /// `@x,y` is a point on the page itself, for canvases and remote desktops.
-    fn locate(&self, target: &str) -> Result<(f64, f64)> {
+    /// Anything the page cannot resolve is looked for on screen, as text.
+    fn locate(&mut self, target: &str) -> Result<(f64, f64)> {
         if let Some(p) = point(target) {
             return Ok(p);
+        }
+        if let Some(t) = target.strip_prefix("screen:") {
+            return self.on_screen(t, 5.0);
         }
         let r = self.api("resolve", &[json!(target)])?;
         if r.is_null() {
             bail!("the page has no oxdemo overlay yet (is it still loading?)");
         }
         if r["ok"] != true {
+            let nothing = r["candidates"].is_null();
+            let named = !(target.starts_with("css:")
+                || target.starts_with("label:")
+                || target.contains(" >> "));
+            if nothing && named {
+                let text = target.strip_prefix("text:").unwrap_or(target);
+                return self
+                    .on_screen(text, 5.0)
+                    .map_err(|e| anyhow!("nothing on the page matches {target:?}, and {e}"));
+            }
             let mut msg = r["error"].as_str().unwrap_or("no match").to_string();
             if let Some(c) = r["candidates"].as_array() {
                 for c in c {
@@ -264,6 +282,98 @@ impl<'a> Runner<'a> {
         Ok((f("x") + f("w") / 2.0, f("y") + f("h") / 2.0))
     }
 
+    fn screenshot(&self) -> Result<image::RgbImage> {
+        let r = self
+            .cdp
+            .call("Page.captureScreenshot", json!({ "format": "png" }))?;
+        let bytes = base64::Engine::decode(
+            &base64::engine::general_purpose::STANDARD,
+            r["data"].as_str().unwrap_or(""),
+        )?;
+        Ok(image::load_from_memory(&bytes)?.to_rgb8())
+    }
+
+    /// Find `text` on screen and return its centre. Retries for `patience`
+    /// seconds while it has not appeared yet. The time spent reading the screen
+    /// is cut from the video, so the cursor never sits waiting.
+    fn on_screen(&mut self, text: &str, patience: f64) -> Result<(f64, f64)> {
+        // Hovering often changes how the item looks (a highlight, a status bar
+        // hint that repeats its words), so while the pointer is still on it, trust it.
+        if let Some((t, p)) = &self.last_found {
+            if t == text && (p.0 - self.mouse.0).abs() < 1.0 && (p.1 - self.mouse.1).abs() < 1.0 {
+                return Ok(*p);
+            }
+        }
+        let t0 = now();
+        let deadline = Instant::now() + Duration::from_secs_f64(patience);
+        let scale = self.script.settings.scale;
+        let mut tries = 0;
+        let result = loop {
+            tries += 1;
+            // The caption and cursor can cover the very text being looked for.
+            self.api("hidden", &[json!(true)])?;
+            let shot = self.screenshot();
+            self.api("hidden", &[json!(false)])?;
+            let shot = shot?;
+            if std::env::var_os("OXDEMO_DEBUG").is_some() {
+                let _ = shot.save(std::env::temp_dir().join("oxdemo-ocr-last.png"));
+            }
+            let words = crate::ocr::read(&shot, scale)?;
+            let hits: Vec<[f64; 4]> = crate::ocr::find(&words, text).into_iter().collect();
+            crate::cdp::debug(&format!(
+                "on screen {text:?}: {} words read, hits {hits:?}",
+                words.len()
+            ));
+            let centre = |h: &[f64; 4]| (h[0] + h[2] / 2.0, h[1] + h[3] / 2.0);
+            match hits.len() {
+                1 => {
+                    self.last_shot = Some(shot);
+                    self.last_found = Some((text.to_string(), centre(&hits[0])));
+                    break Ok(centre(&hits[0]));
+                }
+                // Keep looking while it may still be appearing; reading is slow, so
+                // always look a few times.
+                0 if patience > 0.0 && (Instant::now() < deadline || tries < 3) => self.sleep(0.3),
+                0 => {
+                    let near = crate::ocr::near(&words, text);
+                    let hint = if near.is_empty() {
+                        String::new()
+                    } else {
+                        format!(" (on screen: {})", near.join(", "))
+                    };
+                    break Err(anyhow!("{text:?} is not on screen{hint}"));
+                }
+                _ => {
+                    // The same words in two places, as when a submenu repeats its
+                    // parent's label: take the one that just appeared.
+                    let fresh: Vec<_> = match &self.last_shot {
+                        Some(prev) => hits
+                            .iter()
+                            .filter(|h| changed(prev, &shot, h, scale))
+                            .collect(),
+                        None => vec![],
+                    };
+                    self.last_shot = Some(shot);
+                    if fresh.len() == 1 {
+                        self.last_found = Some((text.to_string(), centre(fresh[0])));
+                        break Ok(centre(fresh[0]));
+                    }
+                    let spots: Vec<String> = hits
+                        .iter()
+                        .map(|h| format!("@{:.0},{:.0}", centre(h).0, centre(h).1))
+                        .collect();
+                    break Err(anyhow!(
+                        "{text:?} is on screen {} times, at {}",
+                        hits.len(),
+                        spots.join(" ")
+                    ));
+                }
+            }
+        };
+        self.take.cuts.push((t0, now()));
+        result
+    }
+
     fn move_to(&mut self, target: &str) -> Result<(f64, f64)> {
         let (x, y) = self.locate(target)?;
         self.glide(x, y, None)?;
@@ -272,6 +382,11 @@ impl<'a> Runner<'a> {
 
     fn click_here(&mut self, target: &str, button: &str, count: u32) -> Result<()> {
         let (x, y) = self.mouse;
+        self.last_found = None;
+        let s = &self.script.settings;
+        if x < 0.0 || y < 0.0 || x > s.width as f64 || y > s.height as f64 {
+            bail!("{target:?} is off screen, at {x:.0},{y:.0}");
+        }
         if point(target).is_none() {
             if let Some(b) = self.api("blocker", &[json!(x), json!(y)])?.as_str() {
                 bail!("a click on {target:?} would land on {b}, which covers it");
@@ -356,6 +471,7 @@ impl<'a> Runner<'a> {
     }
 
     fn press(&mut self, k: &keys::Key) -> Result<()> {
+        self.last_found = None;
         if let Some(b) = &k.badge {
             self.api("badge", &[json!(b)])?;
             if let Some(r) = Self::rect(&self.boxes()["badge"]) {
@@ -405,7 +521,15 @@ impl<'a> Runner<'a> {
     fn hold_caption(&mut self) {
         if let Some((since, need)) = self.caption_hold.take() {
             // Reading speed does not change with pace.
-            let left = since + need - now();
+            // Time cut from the video does not count as reading time.
+            let cut: f64 = self
+                .take
+                .cuts
+                .iter()
+                .filter(|c| c.0 >= since)
+                .map(|c| c.1 - c.0)
+                .sum();
+            let left = since + need + cut - now();
             self.sleep(left);
         }
     }
@@ -630,6 +754,11 @@ impl<'a> Runner<'a> {
                 loop {
                     match self.api("resolve", &[json!(target)]) {
                         Ok(r) if r["ok"] == true => break,
+                        Ok(r)
+                            if r["candidates"].is_null() && self.on_screen(target, 0.0).is_ok() =>
+                        {
+                            break
+                        }
                         Ok(r) if Instant::now() > deadline => {
                             bail!(
                                 "waited {timeout}s: {}",
@@ -643,13 +772,33 @@ impl<'a> Runner<'a> {
                 self.after(0.2);
             }
             Action::Goto(url) => {
+                // Loading is cut from the video, and the caption carries over to
+                // the new page (a new site starts without it).
+                let t = now();
                 self.goto(url)?;
+                self.take.cuts.push((t, now()));
+                if let Some((_, text)) = self.take.captions.last().cloned() {
+                    self.api("caption", &[json!(text)])?;
+                }
                 self.beat(0.4);
             }
             Action::Zoom(z) => {
                 self.take.zooms.push((now(), *z));
             }
             Action::Pause(s) => self.sleep(*s),
+            Action::Wheel { dy, secs } => {
+                // Many small wheel steps over `secs`, so the page glides instead of jumping.
+                let steps = ((secs * 30.0).ceil() as usize).max(1);
+                let (x, y) = self.mouse;
+                for _ in 0..steps {
+                    self.cdp.call(
+                        "Input.dispatchMouseEvent",
+                        json!({ "type": "mouseWheel", "x": x, "y": y, "deltaX": 0, "deltaY": dy / steps as f64 }),
+                    )?;
+                    self.sleep(secs / steps as f64);
+                }
+                self.after(0.3);
+            }
             Action::Skip(s) => {
                 let t = now();
                 self.sleep(*s);
@@ -745,6 +894,8 @@ pub fn record(script: &Script, frame_dir: &Path, headed: bool, progress: bool) -
         pressed: false,
         arc: 1.0,
         caption_hold: None,
+        last_shot: None,
+        last_found: None,
         take: Take {
             frames: vec![],
             start: 0.0,
@@ -840,6 +991,32 @@ pub fn record(script: &Script, frame_dir: &Path, headed: bool, progress: bool) -
         bail!("the browser sent no frames");
     }
     Ok(take)
+}
+
+/// Whether the CSS-pixel box `h` looks different between two screenshots.
+fn changed(a: &image::RgbImage, b: &image::RgbImage, h: &[f64; 4], scale: f64) -> bool {
+    if a.dimensions() != b.dimensions() {
+        return true;
+    }
+    let (x0, y0) = (
+        (h[0] * scale).max(0.0) as u32,
+        (h[1] * scale).max(0.0) as u32,
+    );
+    let (x1, y1) = (
+        ((h[0] + h[2]) * scale) as u32,
+        ((h[1] + h[3]) * scale) as u32,
+    );
+    let (mut diff, mut n) = (0u64, 0u64);
+    for y in y0..y1.min(a.height()) {
+        for x in x0..x1.min(a.width()) {
+            let (p, q) = (a.get_pixel(x, y), b.get_pixel(x, y));
+            diff += (0..3)
+                .map(|i| (p[i] as i32 - q[i] as i32).unsigned_abs() as u64)
+                .sum::<u64>();
+            n += 3;
+        }
+    }
+    n > 0 && diff as f64 / n as f64 > 6.0
 }
 
 /// `@x,y`: a point on the page, in CSS pixels.

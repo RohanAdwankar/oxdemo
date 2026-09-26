@@ -57,7 +57,10 @@
   const shown = (el) => {
     if (ours.has(el)) return false;
     const r = el.getBoundingClientRect();
-    if (r.width < 1 || r.height < 1) return false;
+    if (r.width < 2 || r.height < 2) return false;
+    // Text parked off the page for screen readers can never be scrolled to.
+    const de = document.documentElement;
+    if (r.right + scrollX < 0 || r.bottom + scrollY < 0 || r.left + scrollX > de.scrollWidth || r.top + scrollY > de.scrollHeight) return false;
     return el.checkVisibility ? el.checkVisibility({ visibilityProperty: true }) : true;
   };
   const INTERACTIVE = 'button,a,[role=button],[role=tab],[role=menuitem],[role=option],[role=link],summary,label,select,input,textarea,[draggable=true],[contenteditable=""],[contenteditable=true]';
@@ -138,7 +141,10 @@
 
   const resolve = (q) => {
     const parts = q.split(/\s+>>\s+/);
-    let roots = [document];
+    // While a modal dialog is open, everything behind it is inert.
+    const modal = Array.from(document.querySelectorAll('dialog[open], [aria-modal="true"]'))
+      .filter((d) => shown(d) && (d.getAttribute('aria-modal') === 'true' || d.matches(':modal')));
+    let roots = modal.length ? [modal[modal.length - 1]] : [document];
     let found = { tier: null, hits: [] };
     for (let i = 0; i < parts.length; i++) {
       found = find(roots, parts[i]);
@@ -257,6 +263,8 @@
       const r = (el) => { if (!el) return null; const b = el.getBoundingClientRect(); return b.width ? [b.x, b.y, b.width, b.height] : null; };
       return { caption: caption && caption.textContent ? r(caption) : null, badge: r(badge) };
     },
+    // Hide the overlay for a screenshot that reads the screen; that moment is cut from the video.
+    hidden: (on) => { for (const el of ours) el.style.visibility = on ? 'hidden' : ''; },
     dragStarted: () => { const s = state.dragStarted; state.dragStarted = false; return s; },
     place,
   };

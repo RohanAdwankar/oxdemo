@@ -26,6 +26,12 @@ description: Plan, script and record a demo video or GIF with oxdemo, for a web 
   Captions hold for their reading time whatever `pace` is set to.
 - **End on the payoff.** For oxdemo's own demos, that is the script that
   recorded the video, opened in an editor and zoomed so it can be read.
+  Scroll through all of it with `wheel`, down to the last line, not just the
+  top screenful. Clear the caption (`say ""`) before scrolling so it does not
+  cover the lines.
+- **Show breadth in separate parts.** One complete demo first (the desktop,
+  30 seconds), then each extra surface (a website) as its own script and its
+  own take, ending on its own script. Join the takes afterwards.
 
 ## Hitting a length
 
@@ -41,7 +47,10 @@ Never cut the first scene or the app opening to hit a length.
 
 ## Writing a script for a desktop app
 
-A remote desktop is one canvas, so targets are points: `@x,y`.
+Target things by the words on them: `click "Graphics"`, `click "OK"`. On a
+remote desktop oxdemo reads the screen to find them. Use `@x,y` only for
+things with no text (an icon, a canvas, a chess square), and find those points
+with `snap`.
 
 - Find points with `snap file.png`, then read the image. Snap after each step
   while exploring. Delete the snaps before committing.
@@ -49,6 +58,7 @@ A remote desktop is one canvas, so targets are points: `@x,y`.
   between takes closes open menus, so piecemeal takes mislead.
 - Restart the container in `before` so every take starts identical.
 - Menus: `hover` the item before you `click` it, so the highlight lands first.
+  The click reuses the hovered spot, since hovering changes how the item looks.
   From a menubar, go straight down before moving sideways. Crossing the next
   menubar label switches to that menu.
 - Maximize the app first (`double-click` its title bar) so positions do not
