@@ -288,6 +288,22 @@
     },
     // Hide the overlay for a screenshot that reads the screen; that moment is cut from the video.
     hidden: (on) => { for (const el of ours) el.style.visibility = on ? 'hidden' : ''; },
+    // Opaque caption and key display while zoomed; translucent again once the zoom has eased out.
+    solid: (on) => {
+      if (!caption) install();
+      if (!caption) return;
+      clearTimeout(state.solidTimer);
+      const apply = (opaque) => {
+        for (const el of [caption, badge]) {
+          if (!el.__bg) el.__bg = el.style.background;
+          if (!opaque) { el.style.background = el.__bg; continue; }
+          el.style.background = el.__bg;
+          const m = /rgba?\(([^)]+)\)/.exec(getComputedStyle(el).backgroundColor);
+          if (m) el.style.background = 'rgb(' + m[1].split(',').slice(0, 3).join(',') + ')';
+        }
+      };
+      if (on) apply(true); else state.solidTimer = setTimeout(() => apply(false), 1000);
+    },
     dragStarted: () => { const s = state.dragStarted; state.dragStarted = false; return s; },
     place,
   };

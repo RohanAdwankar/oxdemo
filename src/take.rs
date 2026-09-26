@@ -798,6 +798,10 @@ impl<'a> Runner<'a> {
                 self.beat(0.4);
             }
             Action::Zoom(z) => {
+                // Zoomed frames paste the caption back in from the unzoomed
+                // picture. A translucent caption would carry the unzoomed page
+                // behind it, so it goes opaque while zoomed.
+                self.api("solid", &[json!(*z > 1.0)])?;
                 self.take.zooms.push((now(), *z));
             }
             Action::Pause(s) => self.sleep(*s),
