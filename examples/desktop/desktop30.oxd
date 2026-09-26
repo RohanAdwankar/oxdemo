@@ -8,6 +8,7 @@ url "localhost:6080/vnc.html?autoconnect=1&resize=off&reconnect=1"
 viewport 1440x900
 style "#noVNC_control_bar_anchor, #noVNC_status { display: none !important }"
 pace 0.4
+theme size=26 offset=90
 gif width=720 fps=8
 
 say "A Linux desktop in Docker. Open GIMP from the menu."

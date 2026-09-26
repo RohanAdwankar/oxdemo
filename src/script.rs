@@ -13,6 +13,8 @@ pub struct Theme {
     pub cursor_stroke: String,
     pub ring: String,
     pub position: String,
+    /// Pixels between the caption and the edge of the screen.
+    pub offset: u32,
 }
 
 impl Default for Theme {
@@ -26,6 +28,7 @@ impl Default for Theme {
             cursor_stroke: "#fffdfa".into(),
             ring: "#0f7a5c".into(),
             position: "bottom".into(),
+            offset: 26,
         }
     }
 }
@@ -359,13 +362,14 @@ pub fn parse(text: &str) -> Result<Script> {
                             "cursor" => t.cursor = v,
                             "cursor-stroke" => t.cursor_stroke = v,
                             "ring" => t.ring = v,
+                            "offset" => t.offset = num(&k, &v)?,
                             "position" => {
                                 if v != "top" && v != "bottom" {
                                     bail!("position is top or bottom");
                                 }
                                 t.position = v
                             }
-                            _ => bail!("unknown theme key {k:?} (font, size, caption, text, cursor, cursor-stroke, ring, position)"),
+                            _ => bail!("unknown theme key {k:?} (font, size, caption, text, cursor, cursor-stroke, ring, position, offset)"),
                         }
                     }
                 }

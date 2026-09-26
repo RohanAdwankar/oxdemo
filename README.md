@@ -123,7 +123,7 @@ Settings can go anywhere in the file:
 | `viewport 1440x900` | 1440x900 |
 | `scale 2` | 1; use 2 to keep zoomed frames sharp |
 | `before "<shell>"` | run before each take, from the script's directory |
-| `theme font= size= caption= text= cursor= cursor-stroke= ring= position=` | a dark caption bar at the bottom |
+| `theme font= size= caption= text= cursor= cursor-stroke= ring= position= offset=` | a dark caption bar at the bottom |
 | `video fps= width= crf=` | 30 fps, viewport width, crf 22 |
 | `gif fps= width= start= from= to=` | 12 fps, 800 wide, starting on the first caption |
 | `output demo.mp4 demo.gif` | all four outputs next to the script |

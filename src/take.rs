@@ -684,7 +684,7 @@ fn overlay(script: &Script) -> String {
     let t = &script.settings.theme;
     let theme = json!({
         "font": t.font, "size": t.size, "caption_bg": t.caption_bg, "caption_fg": t.caption_fg,
-        "cursor": t.cursor, "cursor_stroke": t.cursor_stroke, "ring": t.ring, "position": t.position,
+        "cursor": t.cursor, "cursor_stroke": t.cursor_stroke, "ring": t.ring, "position": t.position, "offset": t.offset,
         "css": script.settings.styles.join("\n"),
     });
     include_str!("overlay.js").replace("__OXDEMO_THEME__", &theme.to_string())
