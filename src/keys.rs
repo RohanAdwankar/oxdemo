@@ -51,6 +51,15 @@ fn symbol(name: &str) -> String {
     }
 }
 
+/// What the on-screen key display shows for this key: "⌘ K", "Esc", "↵", "x".
+pub fn label(k: &Key) -> String {
+    match &k.badge {
+        Some(b) => b.clone(),
+        None if k.key.chars().count() == 1 && k.key != " " => k.key.clone(),
+        None => symbol(&k.key),
+    }
+}
+
 pub fn parse(spec: &str) -> Result<Key> {
     let parts: Vec<&str> = spec.split('+').collect();
     let (last, mods) = parts.split_last().unwrap();

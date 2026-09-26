@@ -29,6 +29,9 @@ description: Plan, script and record a demo video or GIF with oxdemo, for a web 
   Scroll through all of it with `wheel`, down to the last line, not just the
   top screenful. Clear the caption (`say ""`) before scrolling so it does not
   cover the lines.
+- **Keyboard-heavy beats get `keys on`.** In a terminal or vim, the keys are
+  the action, so show every one. Pause over a second after a mode key like
+  vim's `i`, or it merges into the text typed after it.
 - **Show breadth in separate parts.** One complete demo first (the desktop,
   30 seconds), then each extra surface (a website) as its own script and its
   own take, ending on its own script. Join the takes afterwards.

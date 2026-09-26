@@ -241,6 +241,29 @@
       if (text) caption.textContent = text;
       caption.style.opacity = text ? '1' : '0';
     },
+    // Every key pressed, shown as it happens. Quick runs group into one label,
+    // "dd" or ":wq ↵"; a pause starts a new one.
+    keycast: (key) => {
+      if (!badge) install();
+      if (!badge) return;
+      const now = performance.now();
+      if (!badge.__keys || now - badge.__at > 1100) badge.__keys = [];
+      badge.__at = now;
+      badge.__keys.push(key);
+      let s = '';
+      let named = false;
+      for (const k of badge.__keys) {
+        const n = k.length > 1;
+        s = !s ? k : (n || named) ? s + ' ' + k : s + k;
+        named = n;
+      }
+      if (s.length > 28) s = '…' + s.slice(-27);
+      badge.style.fontFamily = 'ui-monospace, "DejaVu Sans Mono", monospace';
+      badge.textContent = s;
+      badge.style.opacity = '1'; badge.style.transform = 'translateX(-50%) scale(1)';
+      clearTimeout(badge.__t);
+      badge.__t = setTimeout(() => { badge.style.opacity = '0'; badge.style.transform = 'translateX(-50%) scale(.9)'; }, 1200);
+    },
     badge: (text) => {
       if (!badge) install();
       if (!badge) return;

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<channel name="xfce4-terminal" version="1.0">
+  <property name="font-use-system" type="bool" value="false"/>
+  <property name="font-name" type="string" value="DejaVu Sans Mono 18"/>
+  <property name="misc-default-geometry" type="string" value="80x22"/>
+</channel>

@@ -68,6 +68,8 @@ pub struct Settings {
     pub pace: f64,
     /// Seconds to hold the last frame before the take ends.
     pub tail: f64,
+    /// Show every key pressed on screen, not just shortcuts.
+    pub keys: bool,
 }
 
 impl Default for Settings {
@@ -96,6 +98,7 @@ impl Default for Settings {
             },
             pace: 1.0,
             tail: 1.2,
+            keys: false,
         }
     }
 }
@@ -353,6 +356,14 @@ pub fn parse(text: &str) -> Result<Script> {
                 "pace" => {
                     want(1, "pace 1.0")?;
                     s.pace = num("pace", &args[0])?;
+                }
+                "keys" => {
+                    want(1, "keys on | keys off")?;
+                    s.keys = match args[0].as_str() {
+                        "on" => true,
+                        "off" => false,
+                        _ => bail!("{line}: usage: keys on | keys off"),
+                    };
                 }
                 "tail" => {
                     want(1, "tail 1.5s")?;

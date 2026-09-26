@@ -142,6 +142,7 @@ Settings can go anywhere in the file:
 | `style "css"` | added to every page before recording, e.g. to hide a banner |
 | `watch <path>...` | extra paths that trigger a re-record under `--watch` |
 | `pace 1.0` | multiplies every automatic pause and cursor move |
+| `keys on` | show every key pressed, not just shortcuts: `dd`, `:wq ↵` |
 | `tail 1.2s` | how long the last frame holds |
 
 ## Desktop apps

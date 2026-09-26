@@ -1,0 +1,55 @@
+# Every key on screen: editing a file in vim, on the Docker desktop.
+#
+#   docker run -d --name desk --network host oxdemo-desktop
+#   oxdemo record examples/vim/vim.oxd
+before "docker restart desk >/dev/null && sleep 4 && docker exec desk rm -f notes.txt && docker cp vim.oxd desk:/home/demo/"
+url "localhost:6080/vnc.html?autoconnect=1&resize=off&reconnect=1"
+viewport 1440x900
+style "#noVNC_control_bar_anchor, #noVNC_status { display: none !important }"
+pace 0.5
+theme size=42 offset=70
+keys on
+gif width=720 fps=8
+
+say "It shows every key you press."
+click "Applications"
+hover "Terminal Emulator"
+click "Terminal Emulator"
+skip 2s
+hover @900,420
+type "vim notes.txt"
+key Enter
+skip 1s
+
+say "Every keystroke, even in vim."
+type "i"
+pause 1.3s
+type "oxdemo makes demos"
+key Escape
+pause 700ms
+type "yy"
+pause 500ms
+type "3p"
+pause 900ms
+type ":%s/demos/videos/g"
+key Enter
+pause 900ms
+type "gg"
+pause 400ms
+type "dd"
+pause 900ms
+type "u"
+pause 900ms
+type ":wq"
+key Enter
+skip 500ms
+
+say "This is the whole script."
+type "mousepad vim.oxd"
+key Enter
+skip 2s
+hover @520,420
+pause 1.2s
+say ""
+wheel 6000 2.5s
+pause 1.2s

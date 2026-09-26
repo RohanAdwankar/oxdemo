@@ -442,6 +442,9 @@ impl<'a> Runner<'a> {
                 self.press(&keys::parse("Enter")?)?;
                 continue;
             }
+            if self.script.settings.keys {
+                self.keycast(if c == ' ' { "␣" } else { &s })?;
+            }
             self.cdp.call(
                 "Input.dispatchKeyEvent",
                 json!({ "type": "keyDown", "text": s, "unmodifiedText": s, "key": s }),
@@ -470,9 +473,21 @@ impl<'a> Runner<'a> {
         ])
     }
 
+    /// Show a key in the on-screen key display, and keep it in place when zoomed.
+    fn keycast(&mut self, label: &str) -> Result<()> {
+        self.api("keycast", &[json!(label)])?;
+        if let Some(r) = Self::rect(&self.boxes()["badge"]) {
+            let t = now();
+            self.take.pinned.push((t, t + 1.3, r, false));
+        }
+        Ok(())
+    }
+
     fn press(&mut self, k: &keys::Key) -> Result<()> {
         self.last_found = None;
-        if let Some(b) = &k.badge {
+        if self.script.settings.keys {
+            self.keycast(&keys::label(k))?;
+        } else if let Some(b) = &k.badge {
             self.api("badge", &[json!(b)])?;
             if let Some(r) = Self::rect(&self.boxes()["badge"]) {
                 let t = now();
