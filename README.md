@@ -75,6 +75,7 @@ A target is whatever a person would call the thing. oxdemo tries these in order:
 4. visible text that contains it
 5. a CSS selector
 
+`@x,y` is a point on the page, for canvases and remote desktops.
 `label:`, `text:` and `css:` force one kind. `>>` narrows the search, so
 `"css:nav[aria-label=boards] >> Roadmap"` finds "Roadmap" inside the boards nav.
 
@@ -96,6 +97,7 @@ demo.oxd:3: failed 0.5s into the take:
 |---|---|
 | `say "text"` | show a caption; `say ""` hides it |
 | `click <target>` | glide there, then click where the pointer is |
+| `double-click <target>`, `right-click <target>` | the same, with two clicks or the right button |
 | `hover <target>` | glide there |
 | `type [<target>] "text"` | click the target, then type one key at a time |
 | `clear <target>` | select the field's contents and delete them |
@@ -107,7 +109,9 @@ demo.oxd:3: failed 0.5s into the take:
 | `wait-for <target> [10s]` | wait until it exists |
 | `goto <url>` | navigate |
 | `zoom 1.8`, `zoom off` | ease the view toward the cursor, or back out |
+| `draw @x,y @x,y ...` | press, travel through each point, release: a brush stroke |
 | `pause 1.5s` | hold |
+| `snap still.png` | save a screenshot, without affecting the take |
 | `eval "js"` | run JavaScript in the page |
 
 Settings can go anywhere in the file:
@@ -122,9 +126,28 @@ Settings can go anywhere in the file:
 | `video fps= width= crf=` | 30 fps, viewport width, crf 22 |
 | `gif fps= width= start= from= to=` | 12 fps, 800 wide, starting on the first caption |
 | `output demo.mp4 demo.gif` | all four outputs next to the script |
+| `style "css"` | added to every page before recording, e.g. to hide a banner |
 | `watch <path>...` | extra paths that trigger a re-record under `--watch` |
 | `pace 1.0` | multiplies every automatic pause and cursor move |
 | `tail 1.2s` | how long the last frame holds |
+
+## Desktop apps
+
+[`examples/desktop`](examples/desktop) is a Docker image with an XFCE
+desktop, GIMP and a text editor, served to the browser by noVNC. oxdemo
+records it the same way it records a web app, clicking by position.
+[`desktop.oxd`](examples/desktop/desktop.oxd) opens GIMP, renders a plasma
+cloud, paints on it, applies filters, and then opens itself in a text editor.
+[The result is here](demo/desktop.mp4).
+
+```sh
+docker build -t oxdemo-desktop examples/desktop
+docker run -d --name desk --network host oxdemo-desktop
+oxdemo record examples/desktop/desktop.oxd
+```
+
+Chrome keeps some shortcuts for itself, such as Ctrl+N, Ctrl+T and Ctrl+W, and
+never passes them to the page. Inside a remote desktop, use the menus instead.
 
 ## How it works
 

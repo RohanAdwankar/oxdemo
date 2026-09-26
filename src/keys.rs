@@ -83,7 +83,7 @@ pub fn parse(spec: &str) -> Result<Key> {
         let key = if shifted {
             upper.to_string()
         } else {
-            c.to_string()
+            c.to_ascii_lowercase().to_string()
         };
         (key.clone(), code, upper as u32, Some(key))
     } else if let Some(n) = last

@@ -19,6 +19,7 @@
 
   const install = () => {
     if (document.getElementById('oxdemo-cursor') || !document.body) return;
+    if (T.css) { const st = document.createElement('style'); st.textContent = T.css; document.head.append(st); }
     cursor = document.createElement('div');
     cursor.id = 'oxdemo-cursor';
     cursor.innerHTML = '<svg width="22" height="22" viewBox="0 0 22 22"><path d="M3 2 L3 18 L7.5 13.8 L10.6 20.2 L13.4 18.9 L10.4 12.6 L16.5 12.4 Z" fill="' + T.cursor + '" stroke="' + T.cursor_stroke + '" stroke-width="1.3" stroke-linejoin="round"/></svg>';

@@ -184,7 +184,11 @@ impl<'a> Runner<'a> {
     }
 
     /// Find a target, scroll it into view if it is not, and return its centre.
+    /// `@x,y` is a point on the page itself, for canvases and remote desktops.
     fn locate(&self, target: &str) -> Result<(f64, f64)> {
+        if let Some(p) = point(target) {
+            return Ok(p);
+        }
         let r = self.api("resolve", &[json!(target)])?;
         if r.is_null() {
             bail!("the page has no oxdemo overlay yet (is it still loading?)");
@@ -231,21 +235,54 @@ impl<'a> Runner<'a> {
         Ok((x, y))
     }
 
-    fn click_here(&mut self, target: &str) -> Result<()> {
+    fn click_here(&mut self, target: &str, button: &str, count: u32) -> Result<()> {
         let (x, y) = self.mouse;
-        if let Some(b) = self.api("blocker", &[json!(x), json!(y)])?.as_str() {
-            bail!("a click on {target:?} would land on {b}, which covers it");
+        if point(target).is_none() {
+            if let Some(b) = self.api("blocker", &[json!(x), json!(y)])?.as_str() {
+                bail!("a click on {target:?} would land on {b}, which covers it");
+            }
         }
-        self.mouse_event("mousePressed", x, y)?;
-        self.sleep(0.06);
-        self.mouse_event("mouseReleased", x, y)?;
+        for n in 1..=count {
+            for kind in ["mousePressed", "mouseReleased"] {
+                self.cdp.call(
+                    "Input.dispatchMouseEvent",
+                    json!({ "type": kind, "x": x, "y": y, "button": button,
+                            "buttons": if kind == "mousePressed" { if button == "right" { 2 } else { 1 } } else { 0 },
+                            "clickCount": n }),
+                )?;
+                self.sleep(0.05);
+            }
+        }
         Ok(())
     }
 
     fn click(&mut self, target: &str) -> Result<()> {
+        self.click_with(target, "left", 1)
+    }
+
+    fn click_with(&mut self, target: &str, button: &str, count: u32) -> Result<()> {
         self.move_to(target)?;
         self.beat(0.15);
-        self.click_here(target)
+        self.click_here(target, button, count)
+    }
+
+    /// Press, travel through each point, release: a brush stroke or a lasso.
+    fn draw(&mut self, points: &[String]) -> Result<()> {
+        let pts = points
+            .iter()
+            .map(|p| self.locate(p))
+            .collect::<Result<Vec<_>>>()?;
+        self.glide(pts[0].0, pts[0].1, None)?;
+        self.beat(0.15);
+        self.pressed = true;
+        self.mouse_event("mousePressed", pts[0].0, pts[0].1)?;
+        for &(x, y) in &pts[1..] {
+            self.glide(x, y, None)?;
+        }
+        self.pressed = false;
+        let (x, y) = self.mouse;
+        self.mouse_event("mouseReleased", x, y)?;
+        Ok(())
     }
 
     fn type_text(&mut self, text: &str) -> Result<()> {
@@ -291,6 +328,24 @@ impl<'a> Runner<'a> {
                 self.take.pinned.push((t, t + 1.2, r, false));
             }
         }
+        // Hold each modifier down first, the way a keyboard does. Remote desktops
+        // only forward a modifier they saw go down.
+        const MODS: [(u32, &str, &str, u32); 4] = [
+            (2, "Control", "ControlLeft", 17),
+            (8, "Shift", "ShiftLeft", 16),
+            (1, "Alt", "AltLeft", 18),
+            (4, "Meta", "MetaLeft", 91),
+        ];
+        let held: Vec<_> = MODS.iter().filter(|m| k.modifiers & m.0 != 0).collect();
+        let mut state = 0;
+        for m in &held {
+            state |= m.0;
+            self.cdp.call(
+                "Input.dispatchKeyEvent",
+                json!({ "type": "rawKeyDown", "key": m.1, "code": m.2,
+                "windowsVirtualKeyCode": m.3, "nativeVirtualKeyCode": m.3, "modifiers": state }),
+            )?;
+        }
         let mut down = json!({ "type": if k.text.is_some() { "keyDown" } else { "rawKeyDown" }, "key": k.key, "code": k.code,
             "windowsVirtualKeyCode": k.key_code, "nativeVirtualKeyCode": k.key_code, "modifiers": k.modifiers });
         if let Some(t) = &k.text {
@@ -298,8 +353,17 @@ impl<'a> Runner<'a> {
             down["unmodifiedText"] = json!(t);
         }
         self.cdp.call("Input.dispatchKeyEvent", down)?;
+        self.sleep(0.03);
         self.cdp.call("Input.dispatchKeyEvent", json!({ "type": "keyUp", "key": k.key, "code": k.code,
             "windowsVirtualKeyCode": k.key_code, "nativeVirtualKeyCode": k.key_code, "modifiers": k.modifiers }))?;
+        for m in held.iter().rev() {
+            state &= !m.0;
+            self.cdp.call(
+                "Input.dispatchKeyEvent",
+                json!({ "type": "keyUp", "key": m.1, "code": m.2,
+                "windowsVirtualKeyCode": m.3, "nativeVirtualKeyCode": m.3, "modifiers": state }),
+            )?;
+        }
         Ok(())
     }
 
@@ -383,6 +447,8 @@ impl<'a> Runner<'a> {
                 json!({ "type": "dragEnter", "x": mx, "y": my, "data": d }),
             )?;
         }
+        // A canvas has no DOM to compare, so a drop onto a point is taken on trust.
+        let check = point(from).is_none() && point(to).is_none();
         let before = self.api("signature", &[])?;
         self.glide(x, y, data.as_ref())?;
         self.beat(0.25);
@@ -402,7 +468,7 @@ impl<'a> Runner<'a> {
         }
         self.settle();
         let after = self.api("signature", &[])?;
-        if before == after {
+        if check && before == after {
             bail!("dropped {from:?} on {to:?} and nothing on the page changed");
         }
         Ok(())
@@ -434,6 +500,28 @@ impl<'a> Runner<'a> {
             Action::Click(t) => {
                 self.click(t)?;
                 self.after(0.35);
+            }
+            Action::DoubleClick(t) => {
+                self.click_with(t, "left", 2)?;
+                self.after(0.35);
+            }
+            Action::RightClick(t) => {
+                self.click_with(t, "right", 1)?;
+                self.after(0.35);
+            }
+            Action::Draw(points) => {
+                self.draw(points)?;
+                self.after(0.3);
+            }
+            Action::Snap(file) => {
+                let r = self
+                    .cdp
+                    .call("Page.captureScreenshot", json!({ "format": "png" }))?;
+                let data = r["data"].as_str().unwrap_or("");
+                let bytes =
+                    base64::Engine::decode(&base64::engine::general_purpose::STANDARD, data)?;
+                std::fs::write(file, bytes)
+                    .with_context(|| format!("writing {}", file.display()))?;
             }
             Action::Hover(t) => {
                 self.move_to(t)?;
@@ -556,6 +644,7 @@ fn overlay(script: &Script) -> String {
     let theme = json!({
         "font": t.font, "size": t.size, "caption_bg": t.caption_bg, "caption_fg": t.caption_fg,
         "cursor": t.cursor, "cursor_stroke": t.cursor_stroke, "ring": t.ring, "position": t.position,
+        "css": script.settings.styles.join("\n"),
     });
     include_str!("overlay.js").replace("__OXDEMO_THEME__", &theme.to_string())
 }
@@ -709,4 +798,10 @@ pub fn record(script: &Script, frame_dir: &Path, headed: bool, progress: bool) -
         bail!("the browser sent no frames");
     }
     Ok(take)
+}
+
+/// `@x,y`: a point on the page, in CSS pixels.
+fn point(target: &str) -> Option<(f64, f64)> {
+    let (x, y) = target.strip_prefix('@')?.split_once(',')?;
+    Some((x.trim().parse().ok()?, y.trim().parse().ok()?))
 }

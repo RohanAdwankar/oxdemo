@@ -1,0 +1,106 @@
+# A Linux desktop in Docker, recorded through noVNC in the browser.
+#
+#   docker build -t oxdemo-desktop examples/desktop
+#   docker run -d --name desk --network host oxdemo-desktop
+#   oxdemo record examples/desktop/desktop.oxd
+#
+# A remote desktop is one big canvas, so targets here are points: @x,y.
+before "docker restart desk >/dev/null && sleep 4 && docker cp desktop.oxd desk:/home/demo/"
+url "localhost:6080/vnc.html?autoconnect=1&resize=off&reconnect=1"
+viewport 1440x900
+style "#noVNC_control_bar_anchor, #noVNC_status { display: none !important }"
+gif width=800 fps=8 from=35s to=91s
+pause 2s
+
+say "A full Linux desktop, running in a Docker container."
+hover @69,190
+hover @69,85
+say "oxdemo drives it through the browser, like any web page."
+click @55,12
+hover @55,221
+hover @170,221
+hover @300,221
+click @300,221
+say "Open GIMP from the Graphics menu."
+pause 10s
+double-click @683,113
+
+say "Make a new image."
+click @18,64
+hover @18,93
+click @40,93
+pause 2.5s
+click @875,556
+pause 2.5s
+
+say "Render a plasma cloud: Filters, Render, Noise, Plasma."
+click @393,64
+hover @420,459
+hover @560,459
+hover @720,459
+hover @720,484
+hover @800,484
+hover @900,484
+hover @910,534
+click @910,534
+pause 3s
+click @1056,590
+pause 1.5s
+click @1050,682
+pause 1.5s
+
+say "Paint on it with the brush."
+click @77,145
+zoom 1.6
+draw @330,600 @450,520 @600,580 @750,480 @900,560 @1080,470
+key x
+draw @330,660 @480,600 @640,650 @800,560 @960,630 @1100,560
+zoom off
+pause 1s
+
+say "Invert the colors."
+click @296,64
+hover @296,90
+hover @318,359
+click @318,359
+pause 1.5s
+
+say "Then bend it: Filters, Distorts, Waves."
+click @393,64
+hover @393,90
+hover @422,259
+hover @560,259
+hover @700,259
+hover @719,584
+click @719,584
+pause 2s
+click @1050,822
+pause 2s
+
+say "This whole video came from one plain text script."
+click @55,12
+hover @86,69
+click @86,69
+pause 2.5s
+type "mousepad desktop.oxd 2>/dev/null"
+key Enter
+pause 2.5s
+double-click @1080,401
+pause 1.5s
+click @700,500
+say "Click, type, draw, say. It is the file you are reading now."
+zoom 1.7
+hover @330,120
+hover @360,330
+hover @330,560
+hover @360,760
+key PageDown
+pause 1.5s
+hover @330,420
+key PageDown
+pause 1.5s
+hover @360,700
+zoom off
+say "Record it with: oxdemo record desktop.oxd"
+pause 1s
+say ""

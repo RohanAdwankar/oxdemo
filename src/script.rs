@@ -56,6 +56,8 @@ pub struct Settings {
     pub before: Vec<String>,
     pub outputs: Vec<PathBuf>,
     pub watch: Vec<PathBuf>,
+    /// CSS added to every page before recording, e.g. to hide a cookie banner.
+    pub styles: Vec<String>,
     pub theme: Theme,
     pub video: Video,
     pub gif: Gif,
@@ -75,6 +77,7 @@ impl Default for Settings {
             before: vec![],
             outputs: vec![],
             watch: vec![],
+            styles: vec![],
             theme: Theme::default(),
             video: Video {
                 fps: 30,
@@ -126,6 +129,10 @@ pub enum Action {
     Zoom(f64),
     Pause(f64),
     Eval(String),
+    DoubleClick(String),
+    RightClick(String),
+    Draw(Vec<String>),
+    Snap(PathBuf),
 }
 
 #[derive(Debug, Clone)]
@@ -198,7 +205,7 @@ impl Script {
             }
         }
         for step in script.steps.iter_mut() {
-            if let Action::Upload { file, .. } = &mut step.action {
+            if let Action::Upload { file, .. } | Action::Snap(file) = &mut step.action {
                 if file.is_relative() {
                     *file = dir.join(&*file);
                 }
@@ -328,6 +335,10 @@ pub fn parse(text: &str) -> Result<Script> {
                     s.outputs.extend(args.iter().map(PathBuf::from));
                 }
                 "watch" => s.watch.extend(args.iter().map(PathBuf::from)),
+                "style" | "css" => {
+                    want(1, "style \"#banner { display: none }\"")?;
+                    s.styles.push(args[0].clone());
+                }
                 "pace" => {
                     want(1, "pace 1.0")?;
                     s.pace = num("pace", &args[0])?;
@@ -387,6 +398,24 @@ pub fn parse(text: &str) -> Result<Script> {
                 "click" => {
                     want(1, "click <target>")?;
                     push(Action::Click(args[0].clone()));
+                }
+                "double-click" | "dclick" => {
+                    want(1, "double-click <target>")?;
+                    push(Action::DoubleClick(args[0].clone()));
+                }
+                "right-click" | "rclick" => {
+                    want(1, "right-click <target>")?;
+                    push(Action::RightClick(args[0].clone()));
+                }
+                "draw" => {
+                    if args.len() < 2 {
+                        bail!("{line}: usage: draw @x,y @x,y ... (two or more points)");
+                    }
+                    push(Action::Draw(args.to_vec()));
+                }
+                "snap" => {
+                    want(1, "snap still.png")?;
+                    push(Action::Snap(PathBuf::from(&args[0])));
                 }
                 "hover" => {
                     want(1, "hover <target>")?;
