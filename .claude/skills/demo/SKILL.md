@@ -33,8 +33,9 @@ description: Plan, script and record a demo video or GIF with oxdemo, for a web 
   the action, so show every one. Pause over a second after a mode key like
   vim's `i`, or it merges into the text typed after it.
 - **Show breadth in separate parts.** One complete demo first (the desktop,
-  30 seconds), then each extra surface (a website) as its own script and its
-  own take, ending on its own script. Join the takes afterwards.
+  30 seconds), then each extra surface (a website, a terminal) as its own
+  script and its own take. Join the takes afterwards. Only the last part ends
+  on its script; showing the script after every part repeats the payoff.
 
 ## Hitting a length
 

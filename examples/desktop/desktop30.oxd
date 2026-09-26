@@ -4,7 +4,7 @@
 #   docker build -t oxdemo-desktop examples/desktop
 #   docker run -d --name desk --network host oxdemo-desktop
 #   oxdemo record examples/desktop/desktop30.oxd
-before "docker restart desk >/dev/null && sleep 4 && docker cp desktop30.oxd desk:/home/demo/"
+before "docker restart desk >/dev/null && sleep 4"
 url "localhost:6080/vnc.html?autoconnect=1&resize=off&reconnect=1"
 viewport 1440x900
 style "#noVNC_control_bar_anchor, #noVNC_status { display: none !important }"
@@ -46,19 +46,5 @@ hover "Distorts"
 hover "Waves..."
 click "Waves..."
 click "OK"
-
-say "This is the whole script."
-click "Applications"
-hover "Terminal Emulator"
-click "Terminal Emulator"
-skip 2s
-type "mousepad desktop30.oxd"
-key Enter
-skip 2s
-hover @520,420
-zoom 1.4
-pause 1.2s
+pause 1s
 say ""
-wheel 6000 2.5s
-pause 1.2s
-zoom off

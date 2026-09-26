@@ -1,7 +1,6 @@
 # The same tool on a real website: lichess's analysis board.
 #
 #   oxdemo record examples/lichess/chess.oxd
-before "cp chess.oxd /tmp/oxdemo-chess-script.txt"
 url https://lichess.org
 viewport 1440x900
 style "#network-status { display: none !important }"
@@ -23,12 +22,4 @@ zoom off
 say "Keys too: L starts the engine."
 key l
 pause 2.5s
-
-say "This is the whole script."
-goto /tmp/oxdemo-chess-script.txt
-eval "document.querySelector('pre').style.font = '24px/1.5 monospace'; document.body.style.margin = '24px 40px'"
-hover @520,420
-pause 1.2s
 say ""
-wheel 900 2.5s
-pause 1.2s
