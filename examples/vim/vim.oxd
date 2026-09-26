@@ -9,6 +9,7 @@ style "#noVNC_control_bar_anchor, #noVNC_status { display: none !important }"
 pace 0.5
 theme size=42 offset=70
 keys on
+tail 0.6s
 gif width=720 fps=8
 
 say "It shows every key you press."
@@ -52,4 +53,3 @@ hover @520,420
 pause 1.2s
 say ""
 wheel 6000 2.5s
-pause 1.2s

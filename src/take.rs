@@ -139,14 +139,14 @@ impl<'a> Runner<'a> {
     /// Wait for the page to stop changing: no DOM mutations, animations, image
     /// loads or requests for a moment. Returns how much changed.
     fn settle(&self) -> u64 {
-        let deadline = Instant::now() + Duration::from_secs(6);
+        let deadline = Instant::now() + Duration::from_secs(3);
         let mut mutations = 0;
         loop {
             let r = self
                 .api("settle", &[json!(220), json!(3000)])
                 .unwrap_or(Value::Null);
             mutations += r["mutations"].as_u64().unwrap_or(0);
-            if self.cdp.shared.inflight(Duration::from_secs(3)) == 0 || Instant::now() > deadline {
+            if self.cdp.shared.inflight(Duration::from_secs(2)) == 0 || Instant::now() > deadline {
                 return mutations;
             }
             self.sleep(0.05);
