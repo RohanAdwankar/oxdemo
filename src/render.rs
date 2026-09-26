@@ -69,8 +69,9 @@ impl<'a> Renderer<'a> {
         Renderer { take, views }
     }
 
+    /// Seconds of video, with any `skip` cut out.
     pub fn duration(&self) -> f64 {
-        self.take.end - self.take.start
+        self.take.length()
     }
 
     fn view(&self, t: f64) -> View {
@@ -165,6 +166,8 @@ impl<'a> Renderer<'a> {
         out: (u32, u32),
         mut sink: impl FnMut(usize, RgbImage) -> Result<()>,
     ) -> Result<()> {
+        let times: Vec<f64> = times.iter().map(|&t| self.take.to_take(t)).collect();
+        let times = &times[..];
         let threads = std::thread::available_parallelism()
             .map(|n| n.get())
             .unwrap_or(4)
@@ -408,7 +411,7 @@ pub fn gif(r: &Renderer, s: &Settings, path: &Path) -> Result<()> {
         .captions
         .iter()
         .find(|c| !c.1.is_empty())
-        .map(|c| c.0 - r.take.start + 0.4);
+        .map(|c| r.take.to_video(c.0) + 0.4);
     if let Some(st) = g.start.or(first_caption) {
         let k = times.partition_point(|&t| t < st);
         let k = k.min(times.len());
@@ -569,16 +572,13 @@ pub fn vtt(take: &Take, path: &Path) -> Result<()> {
     let caps: Vec<_> = take
         .captions
         .iter()
-        .map(|(t, s)| (t - take.start, s))
+        .map(|(t, s)| (take.to_video(*t), s))
         .collect();
     for (i, (t, text)) in caps.iter().enumerate() {
         if text.is_empty() {
             continue;
         }
-        let end = caps
-            .get(i + 1)
-            .map(|c| c.0)
-            .unwrap_or(take.end - take.start);
+        let end = caps.get(i + 1).map(|c| c.0).unwrap_or(take.length());
         out.push_str(&format!(
             "\n{}\n{} --> {}\n{}\n",
             i + 1,

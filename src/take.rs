@@ -21,12 +21,47 @@ pub struct Take {
     pub moves: Vec<(f64, f64, f64)>,
     /// (t, level) — each is the zoom from then on.
     pub zooms: Vec<(f64, f64)>,
+    /// (from, to) — stretches cut out of the video, such as waiting for an app to start.
+    pub cuts: Vec<(f64, f64)>,
     pub captions: Vec<(f64, String)>,
     /// Page furniture that stays put when the view zooms: (from, to, [x, y, w, h], is_caption).
     pub pinned: Vec<(f64, f64, [f64; 4], bool)>,
     /// (t, line) — when each step began.
     pub marks: Vec<(f64, usize)>,
     pub failure: Option<Failure>,
+}
+
+impl Take {
+    /// Seconds of video, with the cuts taken out.
+    pub fn length(&self) -> f64 {
+        self.end - self.start - self.cuts.iter().map(|c| c.1 - c.0).sum::<f64>()
+    }
+
+    /// A time in the video to a time in the take, both from the start.
+    pub fn to_take(&self, t: f64) -> f64 {
+        let mut t = t;
+        for &(a, b) in &self.cuts {
+            if t >= a - self.start {
+                t += b - a;
+            } else {
+                break;
+            }
+        }
+        t
+    }
+
+    /// A wall-clock time during the take to a time in the video.
+    pub fn to_video(&self, abs: f64) -> f64 {
+        let mut t = abs - self.start;
+        for &(a, b) in &self.cuts {
+            if abs >= b {
+                t -= b - a;
+            } else if abs > a {
+                t -= abs - a;
+            }
+        }
+        t
+    }
 }
 
 pub struct Failure {
@@ -369,7 +404,8 @@ impl<'a> Runner<'a> {
 
     fn hold_caption(&mut self) {
         if let Some((since, need)) = self.caption_hold.take() {
-            let left = since + need * self.pace - now();
+            // Reading speed does not change with pace.
+            let left = since + need - now();
             self.sleep(left);
         }
     }
@@ -614,6 +650,11 @@ impl<'a> Runner<'a> {
                 self.take.zooms.push((now(), *z));
             }
             Action::Pause(s) => self.sleep(*s),
+            Action::Skip(s) => {
+                let t = now();
+                self.sleep(*s);
+                self.take.cuts.push((t, now()));
+            }
             Action::Eval(src) => {
                 self.js(src)?;
                 self.after(0.2);
@@ -713,6 +754,7 @@ pub fn record(script: &Script, frame_dir: &Path, headed: bool, progress: bool) -
             scale: s.scale,
             moves: vec![],
             zooms: vec![],
+            cuts: vec![],
             captions: vec![],
             pinned: vec![],
             marks: vec![],
@@ -804,4 +846,34 @@ pub fn record(script: &Script, frame_dir: &Path, headed: bool, progress: bool) -
 fn point(target: &str) -> Option<(f64, f64)> {
     let (x, y) = target.strip_prefix('@')?.split_once(',')?;
     Some((x.trim().parse().ok()?, y.trim().parse().ok()?))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cuts_map_both_ways() {
+        let take = Take {
+            frames: vec![],
+            start: 100.0,
+            end: 130.0,
+            width: 10,
+            height: 10,
+            scale: 1.0,
+            moves: vec![],
+            zooms: vec![],
+            cuts: vec![(105.0, 115.0)],
+            captions: vec![],
+            pinned: vec![],
+            marks: vec![],
+            failure: None,
+        };
+        assert_eq!(take.length(), 20.0);
+        assert_eq!(take.to_take(3.0), 3.0);
+        assert_eq!(take.to_take(6.0), 16.0);
+        assert_eq!(take.to_video(103.0), 3.0);
+        assert_eq!(take.to_video(110.0), 5.0);
+        assert_eq!(take.to_video(120.0), 10.0);
+    }
 }

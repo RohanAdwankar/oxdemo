@@ -1,21 +1,31 @@
-# The 30 second cut: GIMP and this file are already open when the take starts.
+# The 30 second cut. `skip` waits for real but cuts the wait out of the video.
 #
 #   docker build -t oxdemo-desktop examples/desktop
 #   docker run -d --name desk --network host oxdemo-desktop
 #   oxdemo record examples/desktop/desktop30.oxd
-before "docker restart desk >/dev/null && sleep 4 && docker cp canvas.png desk:/home/demo/ && docker cp desktop30.oxd desk:/home/demo/"
-before "docker exec -d -e DISPLAY=:1 desk mousepad desktop30.oxd && sleep 2 && docker exec -d -e DISPLAY=:1 desk gimp canvas.png && sleep 20"
+before "docker restart desk >/dev/null && sleep 4 && docker cp desktop30.oxd desk:/home/demo/"
 url "localhost:6080/vnc.html?autoconnect=1&resize=off&reconnect=1"
 viewport 1440x900
 style "#noVNC_control_bar_anchor, #noVNC_status { display: none !important }"
-pace 0.55
+pace 0.4
 gif width=720 fps=8
 
-say "GIMP on a Linux desktop in Docker, driven by oxdemo."
+say "A Linux desktop in Docker. Open GIMP from the menu."
+click @55,12
+hover @55,221
+hover @170,221
+hover @300,221
+click @300,221
+skip 14s
 double-click @683,113
-pause 500ms
 
-say "Render a plasma cloud."
+say "Make a new image and render a plasma cloud."
+click @18,64
+hover @18,93
+click @40,93
+skip 1.2s
+click @875,556
+skip 600ms
 click @393,64
 hover @420,459
 hover @600,459
@@ -23,7 +33,7 @@ hover @720,484
 hover @900,484
 hover @910,534
 click @910,534
-pause 1s
+skip 1s
 click @1050,682
 
 say "Paint on it."
@@ -41,13 +51,17 @@ hover @422,259
 hover @690,259
 hover @719,584
 click @719,584
-pause 1.2s
+skip 1s
 click @1050,822
-pause 500ms
 
 say "All of it came from this script."
-click @410,12
-pause 500ms
+click @55,12
+hover @86,69
+click @86,69
+skip 2s
+type "mousepad desktop30.oxd"
+key Enter
+skip 2s
 zoom 1.6
 hover @300,300
 hover @340,560

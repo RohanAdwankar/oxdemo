@@ -133,6 +133,7 @@ pub enum Action {
     RightClick(String),
     Draw(Vec<String>),
     Snap(PathBuf),
+    Skip(f64),
 }
 
 #[derive(Debug, Clone)]
@@ -494,6 +495,10 @@ pub fn parse(text: &str) -> Result<Script> {
                         bail!("{line}: zoom is between 1 and 4");
                     }
                     push(Action::Zoom(z));
+                }
+                "skip" => {
+                    want(1, "skip 10s")?;
+                    push(Action::Skip(duration(&args[0])?));
                 }
                 "pause" | "wait" | "sleep" => {
                     want(1, "pause 1.5s")?;

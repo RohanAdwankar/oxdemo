@@ -111,6 +111,7 @@ demo.oxd:3: failed 0.5s into the take:
 | `zoom 1.8`, `zoom off` | ease the view toward the cursor, or back out |
 | `draw @x,y @x,y ...` | press, travel through each point, release: a brush stroke |
 | `pause 1.5s` | hold |
+| `skip 10s` | wait for real, but cut the wait out of the video |
 | `snap still.png` | save a screenshot, without affecting the take |
 | `eval "js"` | run JavaScript in the page |
 
@@ -138,7 +139,7 @@ desktop, GIMP and a text editor, served to the browser by noVNC. oxdemo
 records it the same way it records a web app, clicking by position.
 [`desktop.oxd`](examples/desktop/desktop.oxd) opens GIMP, renders a plasma
 cloud, paints on it, applies filters, and then opens itself in a text editor.
-[The result is here](demo/desktop.mp4).
+[The result is here](demo/desktop.mp4), and [a 30 second cut](demo/desktop30.mp4) uses `skip` to cut out GIMP's start-up.
 
 ```sh
 docker build -t oxdemo-desktop examples/desktop
