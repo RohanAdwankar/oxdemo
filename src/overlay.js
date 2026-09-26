@@ -30,7 +30,7 @@
     caption.id = 'oxdemo-caption';
     const edge = T.position === 'top' ? { top: T.offset + 'px' } : { bottom: T.offset + 'px' };
     const pad = Math.round(T.size * 0.65) + 'px ' + Math.round(T.size * 1.2) + 'px';
-    Object.assign(caption.style, edge, { position: 'fixed', left: '50%', transform: 'translateX(-50%)', maxWidth: '980px', width: 'max-content', padding: pad, background: T.caption_bg, color: T.caption_fg, font: '500 ' + T.size + 'px/1.35 ' + T.font, borderRadius: '6px', zIndex: 2147483645, pointerEvents: 'none', opacity: '0', transition: 'opacity .3s', textAlign: 'center', boxShadow: '0 6px 24px rgba(0,0,0,.18)' });
+    Object.assign(caption.style, edge, { position: 'fixed', left: '50%', transform: 'translateX(-50%)', maxWidth: 'min(92vw, ' + Math.round(T.size * 40) + 'px)', width: 'max-content', padding: pad, background: T.caption_bg, color: T.caption_fg, font: '500 ' + T.size + 'px/1.35 ' + T.font, borderRadius: '6px', zIndex: 2147483645, pointerEvents: 'none', opacity: '0', transition: 'opacity .3s', textAlign: 'center', boxShadow: '0 6px 24px rgba(0,0,0,.18)' });
     badge = document.createElement('div');
     Object.assign(badge.style, { position: 'fixed', left: '50%', bottom: T.position === 'top' ? T.offset + 'px' : (T.offset + Math.round(T.size * 3.9)) + 'px', transform: 'translateX(-50%) scale(.9)', padding: '8px 16px', background: T.caption_bg, color: T.caption_fg, font: '600 ' + (T.size + 5) + 'px/1 ' + T.font, borderRadius: '8px', zIndex: 2147483645, pointerEvents: 'none', opacity: '0', transition: 'opacity .2s, transform .2s', letterSpacing: '.04em' });
     for (const el of [ring, cursor, caption, badge]) { ours.add(el); el.setAttribute('data-oxdemo', ''); }

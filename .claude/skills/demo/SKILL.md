@@ -7,6 +7,13 @@ description: Plan, script and record a demo video or GIF with oxdemo, for a web 
 
 ## What the viewer must get
 
+- **The video sells the tool being demoed, not the app on screen.** In
+  oxdemo's own demos, GIMP is just a stage. Every caption says what oxdemo is
+  doing in that moment ("Slow waits are cut out", "It zooms in on the
+  action"), never what the app is doing ("Render a plasma cloud"). Pick the
+  beats in the app by which oxdemo feature they make visible.
+- **Captions are big.** 52px at a 1440 wide viewport (`theme size=52`), kept
+  short enough to fit on one line: about six words.
 - **The first scene is simple and familiar.** Open on something the viewer
   already recognises: a plain desktop, the app's home screen. Nothing already
   open, nothing mid-task. The viewer needs to know where they are before
