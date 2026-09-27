@@ -772,7 +772,9 @@ impl<'a> Runner<'a> {
                     match self.api("resolve", &[json!(target)]) {
                         Ok(r) if r["ok"] == true => break,
                         Ok(r)
-                            if r["candidates"].is_null() && self.on_screen(target, 0.0).is_ok() =>
+                            if !target.starts_with("css:")
+                                && r["candidates"].is_null()
+                                && self.on_screen(target, 0.0).is_ok() =>
                         {
                             break
                         }
