@@ -1,7 +1,7 @@
 // Injected into every document before the page's own scripts run.
 // `__OXDEMO_THEME__` is replaced with the theme as JSON.
 (() => {
-  if (window.__oxdemo) return;
+  if (window !== window.top || window.__oxdemo) return;
   const T = __OXDEMO_THEME__;
   const ours = new Set();
   const state = { last: null, dragStarted: false };

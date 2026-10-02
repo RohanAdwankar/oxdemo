@@ -202,6 +202,8 @@ impl<'a> Runner<'a> {
             let s = ease(i as f64 / steps as f64);
             let px = (1.0 - s).powi(2) * x0 + 2.0 * (1.0 - s) * s * cx + s * s * x;
             let py = (1.0 - s).powi(2) * y0 + 2.0 * (1.0 - s) * s * cy + s * s * y;
+            // Child frames do not bubble pointer events to the page overlay.
+            self.api("place", &[json!(px), json!(py)])?;
             match drag {
                 Some(data) => {
                     self.cdp.call(
